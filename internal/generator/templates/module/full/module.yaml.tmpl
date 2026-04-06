@@ -1,0 +1,25 @@
+name: {{ .Name }}
+version: 1.0.0
+type: module
+
+backend: {{ .HasBackend }}
+frontend: {{ .HasFrontend }}
+
+entry:
+  backend: module.go
+  frontend: index.ts
+
+dependencies: []
+
+routes:
+  - /{{ .Name }}
+
+events:
+  publish: []
+  subscribe: []
+
+permissions:
+  - public
+
+config:
+  env: []

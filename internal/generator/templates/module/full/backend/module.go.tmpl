@@ -1,0 +1,27 @@
+package backend
+
+import (
+	"github.com/gin-gonic/gin"
+	"{{ .Name }}/backend/events"
+)
+
+type EventBus interface {
+	Publish(event string, payload interface{})
+	Subscribe(event string, handler func(interface{}))
+}
+
+type Module interface {
+	RegisterRoutes(router *gin.Engine)
+	RegisterEvents(bus EventBus)
+}
+
+type {{ .ServiceName }}Module struct{}
+
+func (m *{{ .ServiceName }}Module) RegisterRoutes(router *gin.Engine) {
+	RegisterRoutes(router)
+}
+
+func (m *{{ .ServiceName }}Module) RegisterEvents(bus EventBus) {
+	//  Subscribe to events here
+	bus.Subscribe("sample.event", events.HandleSampleEvent)
+}

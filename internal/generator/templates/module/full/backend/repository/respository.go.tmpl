@@ -1,0 +1,7 @@
+package repository
+
+type {{ .ServiceName }}Repository struct{}
+
+func New{{ .ServiceName }}Repository() *{{ .ServiceName }}Repository {
+	return &{{ .ServiceName }}Repository{}
+}

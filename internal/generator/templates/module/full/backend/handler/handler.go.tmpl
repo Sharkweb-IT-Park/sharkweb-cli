@@ -1,0 +1,19 @@
+package handler
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type {{ .ServiceName }}Handler struct{}
+
+func New{{ .ServiceName }}Handler() *{{ .ServiceName }}Handler {
+	return &{{ .ServiceName }}Handler{}
+}
+
+func (h *{{ .ServiceName }}Handler) Health(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "{{ .ServiceName }} handler working",
+	})
+}

@@ -1,0 +1,9 @@
+package dto
+
+type {{ .ServiceName }}Request struct {
+	Name string `json:"name"`
+}
+
+type {{ .ServiceName }}Response struct {
+	ID string `json:"id"`
+}

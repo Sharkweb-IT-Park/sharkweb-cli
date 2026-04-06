@@ -1,0 +1,11 @@
+package service
+
+type {{ .ServiceName }}Service struct{}
+
+func New{{ .ServiceName }}Service() *{{ .ServiceName }}Service {
+	return &{{ .ServiceName }}Service{}
+}
+
+func (s *{{ .ServiceName }}Service) Health() string {
+	return "{{ .ServiceName }} service is running"
+}

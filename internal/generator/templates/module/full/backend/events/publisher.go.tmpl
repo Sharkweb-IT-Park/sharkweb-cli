@@ -1,0 +1,13 @@
+package events
+
+type EventBus interface {
+	Publish(event string, payload interface{})
+}
+
+const (
+	Event{{ .ServiceName }}Sample = "{{ .Name }}.sample_event"
+)
+
+func PublishSampleEvent(bus EventBus, payload interface{}) {
+	bus.Publish(Event{{ .ServiceName }}Sample, payload)
+}

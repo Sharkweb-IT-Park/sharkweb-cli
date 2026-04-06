@@ -1,0 +1,14 @@
+package backend
+
+import (
+	"github.com/gin-gonic/gin"
+	"{{ .Name }}/backend/handler"
+)
+
+func RegisterRoutes(router *gin.Engine) {
+	h := handler.New{{ .ServiceName }}Handler()
+
+	group := router.Group("/{{ .Name }}")
+
+	group.GET("/health", h.Health)
+}

@@ -1,0 +1,7 @@
+package events
+
+import "log"
+
+func HandleSampleEvent(data interface{}) {
+	log.Println("{{ .ServiceName }} received event:", data)
+}
