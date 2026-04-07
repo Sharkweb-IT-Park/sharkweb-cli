@@ -3,6 +3,7 @@ package dev
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -26,6 +27,12 @@ func (p *Process) Start() {
 		cmd := exec.CommandContext(ctx, p.Command, p.Args...)
 		cmd.Dir = p.Dir
 
+		// 🔥 Force colors (THIS is key)
+		cmd.Env = append(os.Environ(),
+			"FORCE_COLOR=1",
+			"TERM=xterm-256color",
+		)
+
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			fmt.Printf("❌ %s stdout error: %v\n", p.Name, err)
@@ -48,20 +55,17 @@ func (p *Process) Start() {
 
 		fmt.Println("🚀 Started:", p.Name)
 
-		// 🔹 Stream logs
+		// 🔥 Stream raw (preserves ANSI)
 		go StreamOutput(p.Name, stdout)
 		go StreamOutput(p.Name, stderr)
 
-		// 🔹 Wait for exit
 		err = cmd.Wait()
 
-		// 🔴 If stopped manually → exit loop
 		if ctx.Err() == context.Canceled {
 			fmt.Printf("🛑 %s stopped\n", p.Name)
 			return
 		}
 
-		// 🔁 Restart on crash
 		if err != nil {
 			fmt.Printf("⚠️ %s crashed. Restarting...\n", p.Name)
 			time.Sleep(2 * time.Second)
@@ -70,11 +74,5 @@ func (p *Process) Start() {
 
 		fmt.Printf("⚠️ %s exited normally\n", p.Name)
 		return
-	}
-}
-
-func (p *Process) Stop() {
-	if p.cancel != nil {
-		p.cancel()
 	}
 }

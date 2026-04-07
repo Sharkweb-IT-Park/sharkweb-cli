@@ -11,17 +11,17 @@ func Setup(name string) error {
 		return err
 	}
 
-	err = SetupBackend(root)
-	if err != nil {
-		return err
-	}
-
-	err = SetupFrontend(root)
+	err = SetupFullbase(root)
 	if err != nil {
 		return err
 	}
 
 	err = InstallFrontendDeps(root)
+	if err != nil {
+		return err
+	}
+
+	err = InstallBackendDeps(root)
 	if err != nil {
 		return err
 	}

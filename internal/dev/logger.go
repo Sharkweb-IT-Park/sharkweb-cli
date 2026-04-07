@@ -1,15 +1,22 @@
 package dev
 
 import (
-	"bufio"
 	"fmt"
 	"io"
+	"os"
 )
 
 func StreamOutput(prefix string, reader io.Reader) {
-	scanner := bufio.NewScanner(reader)
+	buf := make([]byte, 4096)
 
-	for scanner.Scan() {
-		fmt.Printf("[%s] %s\n", prefix, scanner.Text())
+	for {
+		n, err := reader.Read(buf)
+		if n > 0 {
+			fmt.Printf("[%s] ", prefix)
+			os.Stdout.Write(buf[:n])
+		}
+		if err != nil {
+			break
+		}
 	}
 }

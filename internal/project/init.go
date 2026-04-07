@@ -16,9 +16,9 @@ func InitProject(name string) (string, error) {
 	}
 
 	// create folders
-	os.MkdirAll(filepath.Join(root, "backend"), os.ModePerm)
-	os.MkdirAll(filepath.Join(root, "frontend"), os.ModePerm)
-	os.MkdirAll(filepath.Join(root, "shared"), os.ModePerm)
+	// os.MkdirAll(filepath.Join(root, "backend"), os.ModePerm)
+	// os.MkdirAll(filepath.Join(root, "frontend"), os.ModePerm)
+	// os.MkdirAll(filepath.Join(root, "shared"), os.ModePerm)
 
 	fmt.Println("📁 Project structure created")
 

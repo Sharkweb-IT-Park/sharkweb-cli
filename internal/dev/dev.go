@@ -16,7 +16,7 @@ func RunDev(projectRoot string) error {
 	supervisor.Add(&Process{
 		Name:    "backend",
 		Command: "air",
-		Args:    []string{},
+		Args:    []string{"-c", ".air.toml"}, // 🔥 FORCE config
 		Dir:     projectRoot + "/backend",
 	})
 
