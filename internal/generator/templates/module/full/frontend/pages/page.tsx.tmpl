@@ -1,3 +1,22 @@
-export default function Page() {
-  return <div>{{ .ServiceName }} Module</div>
+import { useEffect, useState } from "react";
+
+export default function {{.Component}}Page() {
+
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    fetch("/api/{{.Name}}")
+      .then(res => res.json())
+      .then(res => setData(res.data));
+  }, []);
+
+  return (
+    <div>
+      <h1>{{.Component}} Module</h1>
+
+      {data.map((item: any) => (
+        <div key={item.id}>{item.name}</div>
+      ))}
+    </div>
+  );
 }

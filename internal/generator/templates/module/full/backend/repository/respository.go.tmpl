@@ -1,7 +1,24 @@
 package repository
 
-type {{ .ServiceName }}Repository struct{}
+import (
+	model "{{ .ModulePath }}/modules/{{ .Name }}/model"
+)
 
-func New{{ .ServiceName }}Repository() *{{ .ServiceName }}Repository {
-	return &{{ .ServiceName }}Repository{}
+type Repository struct {
+	db []model.{{ .Component }}
+}
+
+func NewRepository() *Repository {
+	return &Repository{
+		db: make([]model.{{ .Component }}, 0),
+	}
+}
+
+func (r *Repository) FindAll() []model.{{ .Component }} {
+	return r.db
+}
+
+func (r *Repository) Save(entity model.{{ .Component }}) model.{{ .Component }} {
+	r.db = append(r.db, entity)
+	return entity
 }

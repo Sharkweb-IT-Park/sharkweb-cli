@@ -28,7 +28,8 @@ func GenerateFrontendWiring(projectRoot string, modules []string) error {
 		// 🔥 Check if module exists
 		moduleDir := filepath.Join(projectRoot, "frontend/modules", m)
 		if _, err := os.Stat(moduleDir); os.IsNotExist(err) {
-			return fmt.Errorf("frontend module not found: %s", m)
+			fmt.Println("⚠️ Skipping missing frontend module:", m)
+			continue
 		}
 
 		imports = append(imports,
@@ -54,5 +55,17 @@ export function loadModules(): AppModule[] {
 		indent(strings.Join(registrations, ",\n"), 4),
 	)
 
-	return os.WriteFile(outputPath, []byte(code), 0644)
+	// 🔥 Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
+		return err
+	}
+
+	// 🔥 Write file
+	if err := os.WriteFile(outputPath, []byte(code), 0644); err != nil {
+		return err
+	}
+
+	fmt.Println("✅ Frontend wiring generated:", outputPath)
+
+	return nil
 }

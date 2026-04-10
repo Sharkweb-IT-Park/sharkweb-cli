@@ -1,27 +1,41 @@
-package backend
+package {{ .Name }}
 
 import (
 	"github.com/gin-gonic/gin"
-	"{{ .Name }}/backend/events"
+	"{{ .ModulePath }}/core/module"
 )
 
-type EventBus interface {
-	Publish(event string, payload interface{})
-	Subscribe(event string, handler func(interface{}))
+const ModuleName = "{{ .Name }}"
+
+type Module struct{}
+
+func NewModule() *Module {
+	return &Module{}
 }
 
-type Module interface {
-	RegisterRoutes(router *gin.Engine)
-	RegisterEvents(bus EventBus)
+func (m *Module) Name() string {
+	return ModuleName
 }
 
-type {{ .ServiceName }}Module struct{}
-
-func (m *{{ .ServiceName }}Module) RegisterRoutes(router *gin.Engine) {
-	RegisterRoutes(router)
+func (m *Module) Init(ctx *module.ModuleContext) error {
+	return nil
 }
 
-func (m *{{ .ServiceName }}Module) RegisterEvents(bus EventBus) {
-	//  Subscribe to events here
-	bus.Subscribe("sample.event", events.HandleSampleEvent)
+func (m *Module) RegisterRoutes(r *gin.RouterGroup) {
+
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": ModuleName + " module working 🚀",
+		})
+	})
+
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+			"module": ModuleName,
+		})
+	})
 }
+
+// compile-time safety
+var _ module.Module = (*Module)(nil)

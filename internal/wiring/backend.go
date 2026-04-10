@@ -1,50 +1,79 @@
 package wiring
 
 import (
+	"bytes"
+	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+	"text/template"
 )
+
+// ✅ Embed templates
+//
+//go:embed templates/**
+var templateFS embed.FS
+
+type Import struct {
+	Alias string
+	Path  string
+}
+
+type WiringData struct {
+	ModulePath string // ✅ REQUIRED (this fixes your error)
+	Imports    []Import
+	Modules    []string
+}
 
 func GenerateBackendWiring(projectRoot string, modules []string) error {
 
-	outputPath := filepath.Join(projectRoot, "backend/modules/modules.gen.go")
+	backendRoot := filepath.Join(projectRoot, "backend")
+	outputPath := filepath.Join(backendRoot, "modules", "modules.gen.go")
 
-	var imports []string
+	modulePath, err := GetBackendModulePath(projectRoot)
+	if err != nil {
+		return err
+	}
+
+	var imports []Import
 	var registrations []string
 
 	for _, m := range modules {
 
-		importAlias := m
-		importPath := fmt.Sprintf("modules/%s/backend", m)
-
-		imports = append(imports, fmt.Sprintf(`%s "%s"`, importAlias, importPath))
-
-		structName := toPascalCase(m) + "Module"
+		imports = append(imports, Import{
+			Alias: m,
+			Path:  fmt.Sprintf("%s/modules/%s", modulePath, m),
+		})
 
 		registrations = append(registrations,
-			fmt.Sprintf("&%s.%s{}", importAlias, structName),
+			fmt.Sprintf("%s.NewModule()", m),
 		)
 	}
 
-	code := fmt.Sprintf(`package modules
-
-import (
-	"github.com/gin-gonic/gin"
-	"backend/core"
-	%s
-)
-
-func LoadModules() []core.Module {
-	return []core.Module{
-		%s,
+	data := WiringData{
+		ModulePath: modulePath,
+		Imports:    imports,
+		Modules:    registrations,
 	}
-}
-`,
-		strings.Join(imports, "\n"),
-		strings.Join(registrations, ",\n"),
-	)
 
-	return os.WriteFile(outputPath, []byte(code), 0644)
+	// 🔥 LOAD FROM EMBED (THIS FIXES EVERYTHING)
+	tpl, err := template.ParseFS(
+		WiringTemplates,
+		"templates/wiring/backend/wiring.go.tpl",
+	)
+	if err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+
+	if err := tpl.Execute(&buf, data); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
+		return err
+	}
+
+	return os.WriteFile(outputPath, buf.Bytes(), 0644)
 }

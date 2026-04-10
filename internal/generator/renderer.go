@@ -1,33 +1,61 @@
 package generator
 
 import (
+	"bytes"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"text/template"
 )
 
-type TemplateData struct {
-	Name      string
-	Component string
-}
+func RenderTemplateFromFS(
+	fsPath string,
+	outputPath string,
+	data TemplateData,
+	fsys fs.FS,
+) error {
 
-func RenderTemplate(templatePath, outputPath string, data TemplateData) error {
-
-	tmpl, err := template.ParseFiles(templatePath)
+	// 🔥 Read template file
+	content, err := fs.ReadFile(fsys, fsPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("read template error (%s): %w", fsPath, err)
 	}
 
-	err = os.MkdirAll(filepath.Dir(outputPath), 0755)
+	// 🔥 Strict template parsing (fails if missing fields)
+	tmpl, err := template.
+		New(filepath.Base(fsPath)).
+		Option("missingkey=error").
+		Parse(string(content))
 	if err != nil {
-		return err
+		return fmt.Errorf("template parse error (%s): %w", fsPath, err)
 	}
 
-	file, err := os.Create(outputPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+	var buf bytes.Buffer
 
-	return tmpl.Execute(file, data)
+	// 🔥 Execute template
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return fmt.Errorf("template execute error (%s): %w", fsPath, err)
+	}
+
+	// 🔥 Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
+		return fmt.Errorf("mkdir error (%s): %w", outputPath, err)
+	}
+
+	// 🔥 Prevent overwrite (VERY IMPORTANT)
+	if _, err := os.Stat(outputPath); err == nil {
+		fmt.Println("⚠️ Skipping existing file:", outputPath)
+		return nil
+	}
+
+	// 🔥 Write file
+	if err := os.WriteFile(outputPath, buf.Bytes(), 0644); err != nil {
+		return fmt.Errorf("write file error (%s): %w", outputPath, err)
+	}
+
+	// ✅ Debug log (optional but useful)
+	fmt.Println("✅ Generated:", outputPath)
+
+	return nil
 }

@@ -1,5 +1,6 @@
-package model
+package {{.Name}}
 
-type {{ .ServiceName }} struct {
-	ID string `json:"id"`
+type {{.Component}} struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }

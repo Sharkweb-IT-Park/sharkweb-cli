@@ -1,14 +1,13 @@
-package backend
+package {{.Name}}
 
 import (
 	"github.com/gin-gonic/gin"
-	"{{ .Name }}/backend/handler"
 )
 
-func RegisterRoutes(router *gin.Engine) {
-	h := handler.New{{ .ServiceName }}Handler()
+func Register{{.Component}}Routes(r *gin.RouterGroup) {
 
-	group := router.Group("/{{ .Name }}")
+	group := r.Group("/{{.Name}}")
 
-	group.GET("/health", h.Health)
+	// TODO: attach handlers
+	_ = group
 }

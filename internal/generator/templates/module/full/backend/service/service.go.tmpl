@@ -1,11 +1,37 @@
 package service
 
-type {{ .ServiceName }}Service struct{}
+import (
+	repository "{{ .ModulePath }}/modules/{{ .Name }}/repository"
+	model "{{ .ModulePath }}/modules/{{ .Name }}/model"
+	dto "{{ .ModulePath }}/modules/{{ .Name }}/dto"
+	{{.Name}} "{{ .ModulePath }}/modules/{{ .Name }}"
+	events "{{ .ModulePath }}/core/events"
+)
 
-func New{{ .ServiceName }}Service() *{{ .ServiceName }}Service {
-	return &{{ .ServiceName }}Service{}
+type Service struct {
+	repo *repository.Repository
 }
 
-func (s *{{ .ServiceName }}Service) Health() string {
-	return "{{ .ServiceName }} service is running"
+func NewService() *Service {
+	return &Service{
+		repo: repository.NewRepository(),
+	}
+}
+
+func (s *Service) GetAll() []model.{{ .Component }} {
+	return s.repo.FindAll()
+}
+
+func (s *Service) Create(input dto.Create{{ .Component }}DTO) model.{{ .Component }} {
+
+	entity := model.{{ .Component }}{
+		ID:   {{.Name}}.GenerateID(),
+		Name: input.Name,
+	}
+
+	result := s.repo.Save(entity)
+
+	events.Publish("{{ .Name }}.created", result)
+
+	return result
 }

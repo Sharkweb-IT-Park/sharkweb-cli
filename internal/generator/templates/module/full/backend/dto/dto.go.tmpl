@@ -1,9 +1,5 @@
-package dto
+package {{.Name}}
 
-type {{ .ServiceName }}Request struct {
-	Name string `json:"name"`
-}
-
-type {{ .ServiceName }}Response struct {
-	ID string `json:"id"`
+type Create{{.Component}}DTO struct {
+	Name string `json:"name" binding:"required"`
 }

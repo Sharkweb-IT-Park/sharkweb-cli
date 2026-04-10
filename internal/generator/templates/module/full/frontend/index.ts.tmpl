@@ -1,16 +1,6 @@
-export const {{ .ServiceName }}Module = {
-  registerRoutes: (router: any) => {
-    router.push("/{{ .Name }}")
-  },
+import {{.Component}}Page from "./pages/{{.Component}}Page";
 
-  registerMenu: () => [
-    {
-      name: "{{ .ServiceName }}",
-      path: "/{{ .Name }}"
-    }
-  ],
-
-  init: () => {
-    console.log("{{ .ServiceName }} module loaded")
-  }
-}
+export const {{.Component}}Module = {
+  route: "/{{.Name}}",
+  component: {{.Component}}Page,
+};
