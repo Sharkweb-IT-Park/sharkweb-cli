@@ -5,13 +5,19 @@ set -e
 REPO="Sharkweb-IT-Park/sharkweb-cli"
 BINARY="sharkweb"
 
+echo "🚀 Installing $BINARY..."
+
 # Detect OS
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
+# Normalize platform
 case "$OS" in
   Linux) PLATFORM="linux" ;;
   Darwin) PLATFORM="darwin" ;;
+  MINGW*|MSYS*|CYGWIN*)
+    PLATFORM="windows"
+    ;;
   *)
     echo "❌ Unsupported OS: $OS"
     exit 1
@@ -30,29 +36,58 @@ esac
 
 # Fetch latest version
 echo "🔍 Fetching latest version..."
-VERSION=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep tag_name | cut -d '"' -f4)
+VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | grep tag_name | cut -d '"' -f4)
 
 if [ -z "$VERSION" ]; then
   echo "❌ Failed to fetch latest version"
   exit 1
 fi
 
-# Construct download URL
-FILENAME="${BINARY}-${PLATFORM}-${ARCH}"
+echo "📦 Latest version: $VERSION"
+
+# File naming
+EXT=""
+if [ "$PLATFORM" = "windows" ]; then
+  EXT=".exe"
+fi
+
+FILENAME="${BINARY}-${PLATFORM}-${ARCH}${EXT}"
 URL="https://github.com/$REPO/releases/download/$VERSION/$FILENAME"
 
-echo "⬇️ Downloading $BINARY ($VERSION)..."
-echo "URL: $URL"
+echo "⬇️ Downloading $FILENAME..."
+echo "🌐 $URL"
 
-# Download
-curl -fL "$URL" -o "$BINARY"
+# Download binary
+curl -fL "$URL" -o "$BINARY$EXT"
 
-# Make executable
-chmod +x "$BINARY"
+# Make executable (for unix)
+chmod +x "$BINARY$EXT" 2>/dev/null || true
 
-# Install
-echo "📦 Installing to /usr/local/bin..."
-sudo mv "$BINARY" /usr/local/bin/
+# Install logic
+if [ "$PLATFORM" = "windows" ]; then
+  INSTALL_DIR="$HOME/bin"
+  mkdir -p "$INSTALL_DIR"
 
-echo "✅ Installed successfully!"
-echo "Run: $BINARY version"
+  mv "$BINARY$EXT" "$INSTALL_DIR/$BINARY.exe"
+
+  echo "✅ Installed to $INSTALL_DIR"
+
+  # Check PATH
+  if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    echo ""
+    echo "⚠️ Add this to your ~/.bashrc:"
+    echo "export PATH=\"\$HOME/bin:\$PATH\""
+  fi
+
+else
+  INSTALL_DIR="/usr/local/bin"
+
+  echo "📦 Installing to $INSTALL_DIR (may require sudo)..."
+  sudo mv "$BINARY$EXT" "$INSTALL_DIR/$BINARY"
+
+  echo "✅ Installed to $INSTALL_DIR/$BINARY"
+fi
+
+echo ""
+echo "🎉 Installation complete!"
+echo "👉 Run: $BINARY version"
