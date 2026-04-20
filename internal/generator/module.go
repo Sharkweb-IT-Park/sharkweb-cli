@@ -74,6 +74,11 @@ func GenerateModule(name string) error {
 		return err
 	}
 
+	// 3️⃣ Frontend wiring
+	if err := wiring.GenerateNextRoutes(projectRoot, modules); err != nil {
+		return err
+	}
+
 	return nil
 }
 func GenerateFromEmbedFS(fsys fs.FS, backendDir string, frontendDir string, data TemplateData) error {

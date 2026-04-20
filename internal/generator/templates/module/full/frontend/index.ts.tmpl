@@ -1,6 +1,15 @@
-import {{.Component}}Page from "./pages/{{.Component}}Page";
+import { AppModule } from "@/core/module"
 
-export const {{.Component}}Module = {
-  route: "/{{.Name}}",
-  component: {{.Component}}Page,
-};
+export const {{.Component}}Module: AppModule = {
+  name: "{{.Name}}",
+
+  menu: {
+    label: "{{.Component}}",
+    path: "/{{.Name}}",
+  },
+
+  permissions: {
+    read: "{{.Name}}.read",
+    write: "{{.Name}}.write",
+  },
+}
