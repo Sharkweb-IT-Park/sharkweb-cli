@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"sharkweb-cli/internal/config"
+	"sharkweb-cli/internal/wiring"
 )
 
 func UpgradeModule(name string, projectRoot string) error {
@@ -28,18 +29,56 @@ func UpgradeModule(name string, projectRoot string) error {
 	// =========================
 	// 🗑 REMOVE OLD VERSION
 	// =========================
-	err = RemoveModule(name, projectRoot)
-	if err != nil {
+	if err := RemoveModule(name, projectRoot); err != nil {
 		return err
 	}
 
 	// =========================
 	// 🚀 INSTALL LATEST VERSION
 	// =========================
-	installed := make(map[string]bool)
+	visited := map[string]bool{}
+	installed := map[string]bool{}
 
-	err = InstallModule(name, projectRoot, installed)
+	if err := InstallModule(name, projectRoot, visited, installed); err != nil {
+		return err
+	}
+
+	// =========================
+	// 🔄 RELOAD CONFIG
+	// =========================
+	cfg, err = config.Load(projectRoot)
 	if err != nil {
+		return err
+	}
+
+	// =========================
+	// ➕ ADD MODULE BACK
+	// =========================
+	for m := range installed {
+		if !config.IsModuleInstalled(cfg, m) {
+			config.AddModule(cfg, m)
+		}
+	}
+
+	// =========================
+	// 💾 SAVE CONFIG
+	// =========================
+	if err := config.Save(projectRoot, cfg); err != nil {
+		return err
+	}
+
+	// =========================
+	// 🔧 REGENERATE WIRING
+	// =========================
+	if err := wiring.GenerateBackendWiring(projectRoot, cfg.Modules); err != nil {
+		return err
+	}
+
+	if err := wiring.GenerateFrontendWiring(projectRoot, cfg.Modules); err != nil {
+		return err
+	}
+
+	if err := wiring.GenerateNextRoutes(projectRoot, cfg.Modules); err != nil {
 		return err
 	}
 

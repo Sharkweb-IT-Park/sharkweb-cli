@@ -9,8 +9,6 @@ import (
 	"text/template"
 )
 
-// ✅ Embed templates
-//
 //go:embed templates/**
 var templateFS embed.FS
 
@@ -20,11 +18,14 @@ type Import struct {
 }
 
 type WiringData struct {
-	ModulePath string // ✅ REQUIRED (this fixes your error)
+	ModulePath string
 	Imports    []Import
 	Modules    []string
 }
 
+// =========================
+// 🔹 GENERATE BACKEND WIRING
+// =========================
 func GenerateBackendWiring(projectRoot string, modules []string) error {
 
 	backendRoot := filepath.Join(projectRoot, "backend")
@@ -45,6 +46,7 @@ func GenerateBackendWiring(projectRoot string, modules []string) error {
 			Path:  fmt.Sprintf("%s/modules/%s", modulePath, m),
 		})
 
+		// 🔥 STANDARD CONTRACT
 		registrations = append(registrations,
 			fmt.Sprintf("%s.NewModule()", m),
 		)
@@ -56,9 +58,8 @@ func GenerateBackendWiring(projectRoot string, modules []string) error {
 		Modules:    registrations,
 	}
 
-	// 🔥 LOAD FROM EMBED (THIS FIXES EVERYTHING)
 	tpl, err := template.ParseFS(
-		WiringTemplates,
+		templateFS,
 		"templates/wiring/backend/wiring.go.tpl",
 	)
 	if err != nil {
@@ -74,6 +75,8 @@ func GenerateBackendWiring(projectRoot string, modules []string) error {
 	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
 		return err
 	}
+
+	fmt.Println("✅ Backend wiring generated:", outputPath)
 
 	return os.WriteFile(outputPath, buf.Bytes(), 0644)
 }

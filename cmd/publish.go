@@ -8,6 +8,7 @@ import (
 )
 
 var repo string
+var versionmodule string
 
 // =========================
 // 🔹 PARENT COMMAND
@@ -21,13 +22,13 @@ var publishCmd = &cobra.Command{
 // 🔹 CHILD COMMAND
 // =========================
 var publishModuleCmd = &cobra.Command{
-	Use:   "module [path]",
+	Use:   "module [name]",
 	Short: "Publish module",
 	Args:  cobra.ExactArgs(1),
 
 	Run: func(cmd *cobra.Command, args []string) {
 
-		modulePath := args[0]
+		moduleName := args[0]
 
 		if repo == "" {
 			utils.Error("repo is required (--repo)")
@@ -36,7 +37,7 @@ var publishModuleCmd = &cobra.Command{
 
 		utils.Step("Publishing module...")
 
-		err := publish.PublishModule(modulePath, repo)
+		err := publish.PublishModule(moduleName, repo, versionmodule)
 		if err != nil {
 			utils.Error("Publish failed: " + err.Error())
 			return
@@ -51,8 +52,9 @@ var publishModuleCmd = &cobra.Command{
 // =========================
 func init() {
 	rootCmd.AddCommand(publishCmd)
-
 	publishCmd.AddCommand(publishModuleCmd)
 
+	// flags
 	publishModuleCmd.Flags().StringVar(&repo, "repo", "", "GitHub repo URL")
+	publishModuleCmd.Flags().StringVar(&versionmodule, "version", "", "Module version (optional, overrides module.yaml)")
 }

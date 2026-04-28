@@ -1,45 +1,67 @@
 package module
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 )
 
-// CopyFile copies a file from src → dst
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func CopyDir(src string, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			return err
+		}
+
+		if info.Name() == ".git" {
+			return filepath.SkipDir
+		}
+
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		target := filepath.Join(dst, rel)
+
+		if info.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+
+		return CopyFile(path, target)
+	})
+}
+
 func CopyFile(src, dst string) error {
-
-	// 1. Open source file
-	srcFile, err := os.Open(src)
+	data, err := os.ReadFile(src)
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	return os.WriteFile(dst, data, 0644)
+}
 
-	// 2. Ensure destination directory exists
-	err = os.MkdirAll(filepath.Dir(dst), os.ModePerm)
-	if err != nil {
-		return err
-	}
+func CopyDirSafe(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 
-	// 3. Create destination file
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
+		if err != nil {
+			return err
+		}
 
-	// 4. Copy contents
-	_, err = io.Copy(dstFile, srcFile)
-	if err != nil {
-		return err
-	}
+		rel, _ := filepath.Rel(src, path)
+		target := filepath.Join(dst, rel)
 
-	// 5. Preserve file permissions (optional but recommended)
-	info, err := os.Stat(src)
-	if err == nil {
-		_ = os.Chmod(dst, info.Mode())
-	}
+		if info.IsDir() {
+			return os.MkdirAll(target, os.ModePerm)
+		}
 
-	return nil
+		if exists(target) {
+			return nil
+		}
+
+		return CopyFile(path, target)
+	})
 }

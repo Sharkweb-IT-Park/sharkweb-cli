@@ -1,15 +1,17 @@
 package module
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 )
 
-func CloneModule(repo string, target string) error {
-	fmt.Println("⬇️ Cloning:", repo)
+// =========================
+// 🔹 CLONE MODULE
+// =========================
+func CloneModule(repo string, dst string) error {
 
-	cmd := exec.Command("git", "clone", repo, target)
+	cmd := exec.Command("git", "clone", repo, dst)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

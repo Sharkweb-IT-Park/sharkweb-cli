@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -15,17 +16,25 @@ type Config struct {
 // 📥 LOAD CONFIG
 // =========================
 func Load(projectRoot string) (*Config, error) {
-	path := projectRoot + "/sharkweb.config.yaml"
+
+	path := filepath.Join(projectRoot, "sharkweb.config.yaml")
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		// ✅ IMPORTANT: DO NOT FAIL
+		return &Config{
+			Name:    "sharkweb-app",
+			Modules: []string{},
+		}, nil
 	}
 
 	var cfg Config
-	err = yaml.Unmarshal(data, &cfg)
-	if err != nil {
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
+	}
+
+	if cfg.Modules == nil {
+		cfg.Modules = []string{}
 	}
 
 	return &cfg, nil
@@ -35,7 +44,8 @@ func Load(projectRoot string) (*Config, error) {
 // 💾 SAVE CONFIG
 // =========================
 func Save(projectRoot string, cfg *Config) error {
-	path := projectRoot + "/sharkweb.config.yaml"
+
+	path := filepath.Join(projectRoot, "sharkweb.config.yaml") // ✅ HERE
 
 	data, err := yaml.Marshal(cfg)
 	if err != nil {

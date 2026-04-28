@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-type Registry map[string]ModuleMeta
+type Registry map[string][]ModuleMeta
 
 var registryPath = "./registry.json"
 
@@ -36,13 +36,9 @@ func UpdateRegistry(meta *ModuleMeta, repo string) error {
 
 	reg, _ := LoadRegistry()
 
-	reg[meta.Name] = ModuleMeta{
-		Name:         meta.Name,
-		Version:      meta.Version,
-		Dependencies: meta.Dependencies,
-		Backend:      meta.Backend,
-		Frontend:     meta.Frontend,
-	}
+	meta.Repo = repo
+
+	reg[meta.Name] = append(reg[meta.Name], *meta)
 
 	return SaveRegistry(reg)
 }

@@ -4,36 +4,45 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sharkweb-cli/internal/config"
+
 	"sharkweb-cli/internal/registry"
-	"sharkweb-cli/internal/wiring"
 )
 
-func InstallModule(name string, projectRoot string, installed map[string]bool) error {
+// =========================
+// 🔹 INSTALL CORE (RECURSIVE)
+// =========================
+func InstallModule(
+	name string,
+	projectRoot string,
+	visited map[string]bool,
+	installed map[string]bool,
+) error {
 
-	// =========================
-	// 🛑 PREVENT DUPLICATE (RUNTIME)
-	// =========================
-	if installed[name] {
+	// 🔁 prevent infinite recursion
+	if visited[name] {
 		return nil
 	}
+	visited[name] = true
 
 	fmt.Println("🔍 Resolving module:", name)
 
 	// =========================
-	// 📦 FETCH MODULE META
+	// 📦 FETCH META
 	// =========================
 	moduleMeta, err := registry.GetModule(name)
 	if err != nil {
 		return fmt.Errorf("failed to fetch module: %w", err)
 	}
 
+	if moduleMeta.Repo == "" {
+		return fmt.Errorf("invalid repo for module: %s", name)
+	}
+
 	// =========================
-	// 🔁 RESOLVE DEPENDENCIES FIRST
+	// 🔁 INSTALL DEPENDENCIES FIRST
 	// =========================
 	for _, dep := range moduleMeta.Dependencies {
-		err := InstallModule(dep, projectRoot, installed)
-		if err != nil {
+		if err := InstallModule(dep, projectRoot, visited, installed); err != nil {
 			return err
 		}
 	}
@@ -46,13 +55,12 @@ func InstallModule(name string, projectRoot string, installed map[string]bool) e
 	tempDir := filepath.Join(os.TempDir(), "sharkweb-"+name)
 	_ = os.RemoveAll(tempDir)
 
-	err = CloneModule(moduleMeta.Repo, tempDir)
-	if err != nil {
+	if err := CloneModule(moduleMeta.Repo, tempDir); err != nil {
 		return fmt.Errorf("clone failed: %w", err)
 	}
 
 	// =========================
-	// ⚙️ PARSE module.yaml
+	// ⚙️ PARSE CONFIG
 	// =========================
 	moduleConfig, err := ParseModuleConfig(tempDir)
 	if err != nil {
@@ -63,135 +71,73 @@ func InstallModule(name string, projectRoot string, installed map[string]bool) e
 	// 🔥 VALIDATION
 	// =========================
 	if moduleConfig.Backend && moduleConfig.Entry.Backend == "" {
-		return fmt.Errorf("backend entry missing in module.yaml")
+		return fmt.Errorf("backend entry missing")
 	}
-
 	if moduleConfig.Frontend && moduleConfig.Entry.Frontend == "" {
-		return fmt.Errorf("frontend entry missing in module.yaml")
+		return fmt.Errorf("frontend entry missing")
 	}
-
-	fmt.Println("📦 Module:", moduleConfig.Name)
 
 	// =========================
-	// 📦 BACKEND INSTALL
+	// 📦 BACKEND COPY
 	// =========================
 	if moduleConfig.Backend {
 		src := filepath.Join(tempDir, "backend")
 		dst := filepath.Join(projectRoot, "backend/modules", name)
 
-		if exists(src) {
-			err = CopyDir(src, dst)
-			if err != nil {
-				return err
-			}
-			fmt.Println("✅ Backend installed")
+		if exists(dst) {
+			return fmt.Errorf("module already exists: %s", name)
 		}
+
+		if !exists(src) {
+			return fmt.Errorf("backend folder missing in module: %s", name)
+		}
+
+		if err := CopyDir(src, dst); err != nil {
+			return err
+		}
+
+		fmt.Println("✅ Backend installed")
 	}
 
 	// =========================
-	// 🎨 FRONTEND INSTALL
+	// 🎨 FRONTEND COPY
 	// =========================
 	if moduleConfig.Frontend {
 		src := filepath.Join(tempDir, "frontend")
 		dst := filepath.Join(projectRoot, "frontend/modules", name)
 
-		if exists(src) {
-			err = CopyDir(src, dst)
-			if err != nil {
-				return err
-			}
-			fmt.Println("✅ Frontend installed")
+		if exists(dst) {
+			return fmt.Errorf("module already exists: %s", name)
 		}
+
+		if !exists(src) {
+			return fmt.Errorf("frontend folder missing in module: %s", name)
+		}
+
+		if err := CopyDir(src, dst); err != nil {
+			return err
+		}
+
+		fmt.Println("✅ Frontend installed")
 	}
 
 	// =========================
-	// 🔗 SHARED LAYER MERGE
+	// 🔗 SHARED COPY
 	// =========================
 	sharedSrc := filepath.Join(tempDir, "shared")
 	sharedDst := filepath.Join(projectRoot, "shared")
 
 	if exists(sharedSrc) {
-		err = CopyDirSafe(sharedSrc, sharedDst)
-		if err != nil {
+		if err := CopyDirSafe(sharedSrc, sharedDst); err != nil {
 			return err
 		}
-		fmt.Println("🔗 Shared layer merged")
+		fmt.Println("🔗 Shared merged")
 	}
 
-	// =========================
-	// ⚙️ LOAD CONFIG
-	// =========================
-	cfg, err := config.Load(projectRoot)
-	if err != nil {
-		return err
-	}
-
-	// =========================
-	// 🛑 PREVENT DUPLICATE (CONFIG LEVEL)
-	// =========================
-	if config.IsModuleInstalled(cfg, name) {
-		fmt.Println("⚠️ Module already in config:", name)
-	} else {
-		// =========================
-		// ➕ ADD MODULE
-		// =========================
-		config.AddModule(cfg, name)
-
-		// =========================
-		// 💾 SAVE CONFIG
-		// =========================
-		err = config.Save(projectRoot, cfg)
-		if err != nil {
-			return err
-		}
-	}
-
-	// =========================
-	// 🔥 AUTO-WIRING
-	// =========================
-	err = wiring.GenerateWiring(projectRoot, cfg.Modules)
-	if err != nil {
-		return err
-	}
-
-	// =========================
-	// ✅ MARK INSTALLED
-	// =========================
+	// ✅ MARK SUCCESSFUL INSTALL
 	installed[name] = true
 
 	fmt.Println("✅ Installed:", name)
 
 	return nil
-}
-
-// =========================
-// 📁 HELPERS
-// =========================
-
-func exists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
-func CopyDirSafe(src, dst string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-
-		if err != nil {
-			return err
-		}
-
-		rel, _ := filepath.Rel(src, path)
-		target := filepath.Join(dst, rel)
-
-		if info.IsDir() {
-			return os.MkdirAll(target, os.ModePerm)
-		}
-
-		// skip if exists
-		if _, err := os.Stat(target); err == nil {
-			return nil
-		}
-
-		return CopyFile(path, target)
-	})
 }

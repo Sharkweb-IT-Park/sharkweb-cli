@@ -9,11 +9,12 @@ import (
 )
 
 type ModuleMeta struct {
-	Name         string   `yaml:"name"`
-	Version      string   `yaml:"version"`
-	Dependencies []string `yaml:"dependencies"`
-	Backend      bool     `yaml:"backend"`
-	Frontend     bool     `yaml:"frontend"`
+	Name         string   `yaml:"name" json:"name"`
+	Version      string   `yaml:"version" json:"version"`
+	Dependencies []string `yaml:"dependencies" json:"dependencies"`
+	Backend      bool     `yaml:"backend" json:"backend"`
+	Frontend     bool     `yaml:"frontend" json:"frontend"`
+	Repo         string   `json:"repo"`
 }
 
 func ValidateModule(modulePath string) (*ModuleMeta, error) {
@@ -26,13 +27,20 @@ func ValidateModule(modulePath string) (*ModuleMeta, error) {
 	}
 
 	var meta ModuleMeta
-	err = yaml.Unmarshal(data, &meta)
-	if err != nil {
+	if err := yaml.Unmarshal(data, &meta); err != nil {
 		return nil, err
 	}
 
-	if meta.Name == "" || meta.Version == "" {
-		return nil, fmt.Errorf("invalid module.yaml")
+	if meta.Name == "" {
+		return nil, fmt.Errorf("module name required")
+	}
+
+	if meta.Version == "" {
+		return nil, fmt.Errorf("version required")
+	}
+
+	if !meta.Backend && !meta.Frontend {
+		return nil, fmt.Errorf("module must have backend or frontend")
 	}
 
 	return &meta, nil

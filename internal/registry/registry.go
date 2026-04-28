@@ -20,7 +20,7 @@ type Registry struct {
 	Modules map[string]Module `json:"modules"`
 }
 
-var registryURL = "{registry.url}" // Change this to Actual url.
+var registryURL = "https://raw.githubusercontent.com/Sharkweb-IT-Park/sharkweb-registry/main/registry.json" // Change this to Actual url.
 
 func FetchRegistry() (*Registry, error) {
 	resp, err := http.Get(registryURL)

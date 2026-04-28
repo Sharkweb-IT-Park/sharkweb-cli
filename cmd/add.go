@@ -6,7 +6,6 @@ import (
 	"sharkweb-cli/internal/config"
 	"sharkweb-cli/internal/module"
 	"sharkweb-cli/internal/utils"
-	"sharkweb-cli/internal/wiring"
 
 	"github.com/spf13/cobra"
 )
@@ -31,27 +30,18 @@ var addModuleCmd = &cobra.Command{
 
 		moduleName := args[0]
 
-		// =========================
-		// 🔹 1. Validate project
-		// =========================
 		projectRoot, err := utils.ValidateProjectRoot()
 		if err != nil {
 			utils.Error(err.Error())
 			return
 		}
 
-		// =========================
-		// 🔹 2. Load config
-		// =========================
 		cfg, err := config.Load(projectRoot)
 		if err != nil {
 			utils.Error("Failed to load config")
 			return
 		}
 
-		// =========================
-		// 🔹 3. Prevent duplicate
-		// =========================
 		if config.IsModuleInstalled(cfg, moduleName) {
 			utils.Info(fmt.Sprintf("%s already installed", moduleName))
 			return
@@ -59,34 +49,10 @@ var addModuleCmd = &cobra.Command{
 
 		utils.Step("Installing module: " + moduleName)
 
-		// =========================
-		// 🔹 4. Install module
-		// =========================
-		installed := make(map[string]bool)
-
-		err = module.InstallModule(moduleName, projectRoot, installed)
+		// 🔥 USE CORRECT FLOW
+		err = module.AddModule(moduleName, projectRoot)
 		if err != nil {
 			utils.Error("Installation failed: " + err.Error())
-			return
-		}
-
-		// =========================
-		// 🔥 Reload config (source of truth)
-		// =========================
-		cfg, err = config.Load(projectRoot)
-		if err != nil {
-			utils.Error("Failed to reload config")
-			return
-		}
-
-		utils.Step("Generating wiring...")
-
-		// =========================
-		// 🔥 AUTO-WIRING
-		// =========================
-		err = wiring.GenerateWiring(projectRoot, cfg.Modules)
-		if err != nil {
-			utils.Error("Wiring failed: " + err.Error())
 			return
 		}
 
